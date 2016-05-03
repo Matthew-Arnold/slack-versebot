@@ -7,19 +7,19 @@ Copyright (c) 2015 Matthieu Grieger (MIT License)
 """
 
 import books
-import database
+#import database
 import webparser
 
 
 class Verse:
     """ Class that holds the properties and methods of a Verse object. """
 
-    def __init__(self, book, chapter, translation, user, subreddit, verse):
+    def __init__(self, book, chapter, translation, user, channel, verse):
         """ Initializes a Verse object with book, chapter, verse (if
         exists), and translation (if exists). """
 
         self.book = book
-        self.subreddit = subreddit.lower()
+        self.channel = channel.lower()
         book_num = books.get_book_number(self.book)
         if book_num <= 39:
             self.bible_section = "Old Testament"
@@ -49,40 +49,45 @@ class Verse:
             self.end_verse = 0
         if translation != "":
             trans = translation.upper().replace(" ", "")
+            self.translation = trans
+            '''
             if database.is_valid_trans(trans, self.bible_section):
                 self.translation = trans
             else:
-                self.determine_translation(user, subreddit)
+                self.determine_translation(user, channel)
+            '''
         else:
-            self.determine_translation(user, subreddit)
+            self.determine_translation(user, channel)
 
         self.translation_title = ""
         self.contents = ""
         self.permalink = ""
 
-    def determine_translation(self, user, subreddit):
+    def determine_translation(self, user, channel):
         """ Determines which translation should be used when either the user
         does not provide a translation, or when the user provides an invalid
         translation.
 
-        :param subreddit: The subreddit where the quotation is located
+        :param channel: The channel where the quotation is located
         :param user: The user that called VerseBot for a quotation
         """
+        '''
         user_default = database.get_user_trans(user, self.bible_section)
         if user_default:
             self.translation = user_default
         else:
-            subreddit_default = database.get_subreddit_trans(
-                subreddit, self.bible_section)
-            if subreddit_default:
-                self.translation = subreddit_default
+            channel_default = database.get_channel_trans(
+                channel, self.bible_section)
+            if channel_default:
+                self.translation = channel_default
             else:
-                if self.bible_section == "Old Testament":
-                    self.translation = "ESV"
-                elif self.bible_section == "New Testament":
-                    self.translation = "ESV"
-                else:
-                    self.translation = "NRSV"
+        '''
+        if self.bible_section == "Old Testament":
+            self.translation = "ESV"
+        elif self.bible_section == "New Testament":
+            self.translation = "ESV"
+        else:
+            self.translation = "NRSV"
 
     def get_contents(self):
         """ Retrieves the contents of a Verse object. """

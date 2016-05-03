@@ -6,7 +6,7 @@ response.py
 Copyright (c) 2015 Matthieu Grieger (MIT License)
 """
 
-from config import REDDIT_USERNAME, MAXIMUM_MESSAGE_LENGTH
+from config import MAXIMUM_MESSAGE_LENGTH
 
 
 class Response:
@@ -23,7 +23,7 @@ class Response:
         if link is not None:
             self.link = link
         else:
-            self.link = self.message.permalink
+            self.link = ''
 
     def add_verse(self, verse):
         """ Adds a verse to the verse list.
@@ -69,7 +69,7 @@ class Response:
         else:
             if self.exceeds_max_length():
                 self.response = self.generate_overflow_response()
-            self.response += self.get_comment_footer()
+            #self.response += self.get_comment_footer()
             return self.response
 
     def exceeds_max_length(self):
@@ -111,6 +111,7 @@ class Response:
 
         return comment
 
+    '''
     def get_comment_footer(self):
         """ Returns the footer for the comment. """
 
@@ -136,3 +137,4 @@ class Response:
                 "This+action+cannot+be+reversed!) ^this ^comment."
                 % {"user": self.message.author, "bot": REDDIT_USERNAME,
                    "link": self.link})
+    '''
