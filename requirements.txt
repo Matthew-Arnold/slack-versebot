@@ -1,0 +1,7 @@
+asyncio==3.4.3
+beautifulsoup4==4.4.1
+bs4==0.0.1
+prettyprint==0.1.5
+requests==2.10.0
+slacker==0.9.15
+websockets==3.1
