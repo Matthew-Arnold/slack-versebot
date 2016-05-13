@@ -6,8 +6,7 @@ response.py
 Copyright (c) 2015 Matthieu Grieger (MIT License)
 """
 
-from config import MAXIMUM_MESSAGE_LENGTH
-
+MAXIMUM_MESSAGE_LENGTH = 6000
 
 class Response:
     """ Class that holds the properties and methods of a comment

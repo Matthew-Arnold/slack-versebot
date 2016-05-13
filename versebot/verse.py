@@ -7,7 +7,6 @@ Copyright (c) 2015 Matthieu Grieger (MIT License)
 """
 
 import books
-#import database
 import webparser
 
 

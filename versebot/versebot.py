@@ -11,7 +11,6 @@ import websockets
 import json
 import signal
 import logging
-import pprint
 import time
 
 import sys
@@ -23,6 +22,7 @@ from response import Response
 from verse import Verse
 from webparser import WebParser
 
+
 class VerseBot():
     def __init__(self, token):
         self.log = logging.getLogger('versebot')
@@ -30,7 +30,7 @@ class VerseBot():
         self.parser = WebParser()
         self.slack = Slacker(token)
         self.next_id = 1
-    
+
     async def run(self):
         rtm_response = self.slack.rtm.start()
 
@@ -39,9 +39,9 @@ class VerseBot():
 
             await self.listen(url)
 
-            
+
         else:
-        #TODO handle error
+            # TODO handle error
             pass
 
     async def listen(self, url):
@@ -56,7 +56,6 @@ class VerseBot():
                         time.sleep(1)
                 else:
                     pass
-            
 
     async def send_verses_response(self, msg, websocket):
         user = msg['user']
@@ -92,11 +91,13 @@ class VerseBot():
                     response = await websocket.recv()
         else:
             self.log.info("No verses found in this message. Messaging admin")
-            #TODO message admin
+            # TODO message admin
+
 
 def handle_sigint(signal, frame):
     loop.stop()
     sys.exit(0)
+
 
 loop = asyncio.get_event_loop()
 
