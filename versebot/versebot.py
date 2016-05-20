@@ -23,10 +23,11 @@ from verse import Verse
 from webparser import WebParser
 
 
-class VerseBot():
+class VerseBot:
     def __init__(self, token):
-        self.log = logging.getLogger('versebot')
         logging.getLogger('requests').setLevel(logging.WARNING)
+        self.log = logging.getLogger('versebot')
+        self.log.addHandler(logging.FileHandler('versebot_log.txt'))
         self.parser = WebParser()
         self.slack = Slacker(token)
         self.next_id = 1
@@ -39,10 +40,9 @@ class VerseBot():
 
             await self.listen(url)
 
-
         else:
-            # TODO handle error
-            pass
+            self.log.error('Failed to connect to rtm')
+            sys.exit(1)
 
     async def listen(self, url):
         async with websockets.connect(url) as websocket:
@@ -54,6 +54,9 @@ class VerseBot():
                     if msg.get('text', '').find('@U15P6LAG5') != -1:
                         await self.send_verses_response(msg, websocket)
                         time.sleep(1)
+                elif msg.get('type', '') == 'error':
+                    self.log.error('error message received',
+                                   extra={'msg': msg})
                 else:
                     pass
 
@@ -80,15 +83,17 @@ class VerseBot():
             if len(response.verse_list) != 0:
                 message_response = response.construct_message()
                 if message_response is not None:
-                    data = {}
-                    data['id'] = self.next_id
+                    data = {'id': self.next_id, 'type': 'message',
+                            'channel': channel, 'text': message_response}
+
                     self.next_id += 1
-                    data['type'] = 'message'
-                    data['channel'] = channel
-                    data['text'] = message_response
 
                     await websocket.send(json.dumps(data))
                     response = await websocket.recv()
+
+                    if not json.loads(response)['ok'] == 'True':
+                        self.log.error('error response',
+                                       extra={'response': response})
         else:
             self.log.info("No verses found in this message. Messaging admin")
             # TODO message admin

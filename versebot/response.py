@@ -6,7 +6,8 @@ response.py
 Copyright (c) 2015 Matthieu Grieger (MIT License)
 """
 
-MAXIMUM_MESSAGE_LENGTH = 6000
+MAXIMUM_MESSAGE_LENGTH = 4000
+
 
 class Response:
     """ Class that holds the properties and methods of a comment
@@ -39,9 +40,9 @@ class Response:
         """
         for v in self.verse_list:
             if (v.book == verse.book and
-                    v.chapter == verse.chapter and
-                    v.verse == verse.verse and
-                    v.translation == verse.translation):
+                        v.chapter == verse.chapter and
+                        v.verse == verse.verse and
+                        v.translation == verse.translation):
                 return True
         return False
 
@@ -68,7 +69,7 @@ class Response:
         else:
             if self.exceeds_max_length():
                 self.response = self.generate_overflow_response()
-            #self.response += self.get_comment_footer()
+            # self.response += self.get_comment_footer()
             return self.response
 
     def exceeds_max_length(self):
