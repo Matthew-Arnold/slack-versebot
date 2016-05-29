@@ -5,13 +5,13 @@ Adapted from VerseBot for Reddit by Matthieu Grieger
 Copyright (c) 2016 Matt Arnold (MIT License)
 
 """
-from slacker import Slacker
 import asyncio
 import websockets
 import json
 import signal
 import logging
 import time
+from slacker import Slacker
 
 import sys
 import os
@@ -22,6 +22,7 @@ from response import Response
 from verse import Verse
 from webparser import WebParser
 
+TIMEOUT=3
 
 class VerseBot:
     def __init__(self, token):
@@ -47,18 +48,21 @@ class VerseBot:
     async def listen(self, url):
         async with websockets.connect(url) as websocket:
             while True:
-                msg = await websocket.recv()
-                msg = json.loads(msg)
+                try: 
+                    msg = await asyncio.wait_for(websocket.recv(), TIMEOUT)
+                    msg = json.loads(msg)
 
-                if msg.get('type', '') == 'message':
-                    if msg.get('text', '').find('@U15P6LAG5') != -1:
-                        await self.send_verses_response(msg, websocket)
-                        time.sleep(1)
-                elif msg.get('type', '') == 'error':
-                    self.log.error('error message received',
-                                   extra={'msg': msg})
-                else:
-                    pass
+                    if msg.get('type', '') == 'message':
+                        if msg.get('text', '').find('@U15P6LAG5') != -1:
+                            await self.send_verses_response(msg, websocket)
+                            time.sleep(1)
+                    elif msg.get('type', '') == 'error':
+                        self.log.error('error message received',
+                                       extra={'msg': msg})
+                    else:
+                        pass
+                except asyncio.TimeoutError:
+                    await self.ping(websocket)
 
     async def send_verses_response(self, msg, websocket):
         user = msg['user']
@@ -91,12 +95,20 @@ class VerseBot:
                     await websocket.send(json.dumps(data))
                     response = await websocket.recv()
 
-                    if not json.loads(response)['ok'] == 'True':
+                    if not json.loads(response)['ok'] == 'true':
                         self.log.error('error response',
                                        extra={'response': response})
         else:
             self.log.info("No verses found in this message. Messaging admin")
             # TODO message admin
+
+    async def ping(self, websocket):
+        ping_message =  json.dumps({"id": self.next_id, "type": "ping", 
+                "time": time.time()})
+        self.next_id += 1
+        await websocket.send(ping_message)
+        pong = await websocket.recv()
+        #eventually validate or something here
 
 
 def handle_sigint(signal, frame):
