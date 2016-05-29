@@ -32,8 +32,8 @@ class VerseBot:
         self.parser = WebParser()
         self.slack = Slacker(token)
         self.next_id = 1
-
-    async def run(self):
+        
+    async def connect(self):
         rtm_response = self.slack.rtm.start()
 
         if rtm_response.successful:
@@ -44,6 +44,12 @@ class VerseBot:
         else:
             self.log.error('Failed to connect to rtm')
             sys.exit(1)
+            
+    async def run(self):
+        try:
+            await self.connect()
+        except websockets.ConnectionClosed:
+            await self.connect()
 
     async def listen(self, url):
         async with websockets.connect(url) as websocket:
