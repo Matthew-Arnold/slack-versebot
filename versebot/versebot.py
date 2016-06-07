@@ -22,7 +22,8 @@ from response import Response
 from verse import Verse
 from webparser import WebParser
 
-TIMEOUT=3
+TIMEOUT = 3
+
 
 class VerseBot:
     def __init__(self, token):
@@ -32,7 +33,17 @@ class VerseBot:
         self.parser = WebParser()
         self.slack = Slacker(token)
         self.next_id = 1
-        
+
+        self.user_id = self._get_user_id()
+
+    def _get_user_id(self):
+        data = self.slack.auth.test()
+
+        if data.successful:
+            return data.body['user_id']
+        else:
+            raise Exception
+
     async def connect(self):
         rtm_response = self.slack.rtm.start()
 
@@ -44,7 +55,7 @@ class VerseBot:
         else:
             self.log.error('Failed to connect to rtm')
             sys.exit(1)
-            
+
     async def run(self):
         try:
             await self.connect()
@@ -54,12 +65,12 @@ class VerseBot:
     async def listen(self, url):
         async with websockets.connect(url) as websocket:
             while True:
-                try: 
+                try:
                     msg = await asyncio.wait_for(websocket.recv(), TIMEOUT)
                     msg = json.loads(msg)
 
                     if msg.get('type', '') == 'message':
-                        if msg.get('text', '').find('@U15P6LAG5') != -1:
+                        if msg.get('text', '').find('@' + self.user_id) != -1:
                             await self.send_verses_response(msg, websocket)
                             time.sleep(1)
                     elif msg.get('type', '') == 'error':
@@ -109,12 +120,12 @@ class VerseBot:
             # TODO message admin
 
     async def ping(self, websocket):
-        ping_message =  json.dumps({"id": self.next_id, "type": "ping", 
-                "time": time.time()})
+        ping_message = json.dumps({"id": self.next_id, "type": "ping",
+                                   "time": time.time()})
         self.next_id += 1
         await websocket.send(ping_message)
         pong = await websocket.recv()
-        #eventually validate or something here
+        # eventually validate or something here
 
 
 def handle_sigint(signal, frame):
