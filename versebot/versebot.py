@@ -69,7 +69,8 @@ class VerseBot:
                     msg = await asyncio.wait_for(websocket.recv(), TIMEOUT)
                     msg = json.loads(msg)
 
-                    if msg.get('type', '') == 'message':
+                    if msg.get('type', '') == 'message' and \
+                                    msg.get('subtype', '') != 'bot_message':
                         if msg.get('text', '').find('@' + self.user_id) != -1:
                             await self.send_verses_response(msg, websocket)
                             time.sleep(1)
