@@ -15,6 +15,7 @@ from slacker import Slacker
 
 import sys
 import os
+import threading
 
 import books
 from regex import find_verses
@@ -22,11 +23,13 @@ from response import Response
 from verse import Verse
 from webparser import WebParser
 
+# Time (seconds) to wait between receiving message before sending a ping
 TIMEOUT = 3
 
 
-class VerseBot:
+class VerseBot(threading.Thread):
     def __init__(self, token):
+        super(VerseBot, self).__init__()
         logging.getLogger('requests').setLevel(logging.WARNING)
         self.log = logging.getLogger('versebot')
         self.log.addHandler(logging.FileHandler('versebot_log.txt'))
@@ -50,17 +53,21 @@ class VerseBot:
         if rtm_response.successful:
             url = rtm_response.body['url']
 
-            await self.listen(url)
+            while True:
+                try:
+                    await self.listen(url)
+                except websockets.ConnectionClosed:
+                    pass
 
         else:
             self.log.error('Failed to connect to rtm')
-            sys.exit(1)
 
-    async def run(self):
-        try:
-            await self.connect()
-        except websockets.ConnectionClosed:
-            await self.connect()
+    def run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        asyncio.ensure_future(self.connect())
+        loop.run_forever()
 
     async def listen(self, url):
         async with websockets.connect(url) as websocket:
@@ -117,8 +124,7 @@ class VerseBot:
                         self.log.error('error response',
                                        extra={'response': response})
         else:
-            self.log.info("No verses found in this message. Messaging admin")
-            # TODO message admin
+            pass
 
     async def ping(self, websocket):
         ping_message = json.dumps({"id": self.next_id, "type": "ping",
@@ -129,18 +135,23 @@ class VerseBot:
         # eventually validate or something here
 
 
-def handle_sigint(signal, frame):
-    loop.stop()
+def handle_sigint(sig, frame):
+    for thread in threads:
+        signal.pthread_kill(thread.ident, signal.SIGINT)
+
     sys.exit(0)
 
 
-loop = asyncio.get_event_loop()
-
+threads = []
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handle_sigint)
-    token = os.environ['SLACK_TOKEN']
-    bot = VerseBot(token)
 
-    asyncio.ensure_future(bot.run())
+    with open('tokens.dat') as tokens:
+        for token in tokens.readlines():
+            token = token.strip()
+            vb = VerseBot(token)
+            vb.start()
+            threads.append(vb)
 
-    loop.run_forever()
+    for t in threads:
+        t.join()
