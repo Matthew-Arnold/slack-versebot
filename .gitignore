@@ -2,3 +2,4 @@
 versebot/oauth.ini
 .idea/
 *.sqlite
+tokens.dat
