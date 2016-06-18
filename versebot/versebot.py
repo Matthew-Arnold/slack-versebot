@@ -35,6 +35,7 @@ class VerseBot(threading.Thread):
         self.parser = WebParser()
         self.slack = Slacker(token)
         self.next_id = 1
+        self.unacked_messages = set()
 
         self.user_id = self._get_user_id()
 
@@ -56,6 +57,9 @@ class VerseBot(threading.Thread):
                 try:
                     await self.listen(url)
                 except websockets.ConnectionClosed:
+                    pass
+                except Exception as e:
+                    self.log.error(str(e))
                     pass
 
         else:
@@ -83,6 +87,7 @@ class VerseBot(threading.Thread):
                     elif msg.get('type', '') == 'error':
                         self.log.error('error message received',
                                        extra={'msg': msg})
+                    # TODO handle rtm response. check if ok
                     else:
                         pass
                 except asyncio.TimeoutError:
@@ -115,13 +120,9 @@ class VerseBot(threading.Thread):
                             'channel': channel, 'text': message_response}
 
                     self.next_id += 1
+                    self.unacked_messages.add(self.next_id)
 
                     await websocket.send(json.dumps(data))
-                    response = await websocket.recv()
-
-                    if not json.loads(response)['ok'] == 'true':
-                        self.log.error('error response',
-                                       extra={'response': response})
         else:
             pass
 
