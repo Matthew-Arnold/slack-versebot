@@ -29,14 +29,15 @@ TIMEOUT = 3
 class VerseBot(threading.Thread):
     def __init__(self, token):
         super(VerseBot, self).__init__()
+
         logging.getLogger('requests').setLevel(logging.WARNING)
+
         self.log = logging.getLogger('versebot')
         self.log.addHandler(logging.FileHandler('versebot_log.txt'))
         self.parser = WebParser()
         self.slack = Slacker(token)
         self.next_id = 1
         self.unacked_messages = set()
-
         self.user_id = self._get_user_id()
 
     def _get_user_id(self):
@@ -59,7 +60,7 @@ class VerseBot(threading.Thread):
                 except websockets.ConnectionClosed:
                     pass
                 except Exception as e:
-                    self.log.error(str(e))
+                    self.log.error('caught ' + str(type(e)) + ':' + str(e))
                     pass
 
         else:
@@ -85,8 +86,9 @@ class VerseBot(threading.Thread):
                             await self.send_verses_response(msg, websocket)
                             time.sleep(1)
                     elif msg.get('type', '') == 'error':
-                        self.log.error('error message received',
-                                       extra={'msg': msg})
+                        self.log.error(
+                            'error message received: %s' % (json.dumps(msg)))
+
                     # TODO handle rtm response. check if ok
                     else:
                         pass
