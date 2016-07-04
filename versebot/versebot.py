@@ -118,13 +118,7 @@ class VerseBot(threading.Thread):
             if len(response.verse_list) != 0:
                 message_response = response.construct_message()
                 if message_response is not None:
-                    data = {'id': self.next_id, 'type': 'message',
-                            'channel': channel, 'text': message_response}
-
-                    self.next_id += 1
-                    self.unacked_messages.add(self.next_id)
-
-                    await websocket.send(json.dumps(data))
+                    await self.send_message(message_response, channel)
         else:
             pass
 
@@ -135,6 +129,15 @@ class VerseBot(threading.Thread):
         await websocket.send(ping_message)
         pong = await websocket.recv()
         # eventually validate or something here
+
+    async def send_message(self, text, channel):
+        data = {'id': self.next_id, 'type': 'message', 'channel': channel,
+                'text': text}
+
+        self.next_id += 1
+        self.unacked_messages.add(self.next_id)
+
+        await websocket.send(json.dumps(data))
 
 
 def handle_sigint(sig, frame):
