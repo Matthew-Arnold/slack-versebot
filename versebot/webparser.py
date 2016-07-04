@@ -4,9 +4,11 @@ By Matthieu Grieger
 Continued By Team VerseBot
 webparser.py
 Copyright (c) 2015 Matthieu Grieger (MIT License)
+Portions copyright (c) 2016 Matt Arnold (MIT License)
 """
 
 import re
+import requests
 from urllib.request import urlopen
 from warnings import filterwarnings
 
@@ -176,3 +178,19 @@ def get_bible_hub_verse(verse):
                 contents += ("[**%d**] %s " % (verse_num, val))
 
     return contents, trans_title, url
+
+
+def search_bible_gateway(search_terms, version='ESV'):
+    url = 'https://www.biblegateway.com/quicksearch/'
+    params = {'quicksearch': search_terms.replace(' ', '+'), 'version': version}
+
+    r = requests.get(url, params=params)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    search_results = soup.find_all('article', class_='row bible-item')
+
+    if len(search_results) == 0:
+        return None
+
+    reference = search_results[0].div.a.string
+
+    return str(reference)
