@@ -11,12 +11,14 @@ import json
 import signal
 import logging
 import time
+import re
 from slacker import Slacker
 
 import sys
 import threading
 
 import books
+import webparser
 from regex import find_verses
 from response import Response
 from verse import Verse
@@ -59,9 +61,11 @@ class VerseBot(threading.Thread):
                     await self.listen(url)
                 except websockets.ConnectionClosed:
                     pass
+                '''
                 except Exception as e:
                     self.log.error('caught ' + str(type(e)) + ':' + str(e))
                     pass
+                '''
 
         else:
             self.log.error('Failed to connect to rtm')
@@ -98,10 +102,35 @@ class VerseBot(threading.Thread):
     async def send_verses_response(self, msg, websocket):
         user = msg['user']
         channel = msg['channel']
-
         body = msg['text']
 
+        match = re.search(r'“.*"', body)
+
+        if match is not None:
+            reference = self.search(match.group(0))
+            body = '[' + reference + ']'
+
         verses = find_verses(body)
+        await self.send_verses(body, verses, user, channel, websocket)
+
+    async def ping(self, websocket):
+        ping_message = json.dumps({"id": self.next_id, "type": "ping",
+                                   "time": time.time()})
+        self.next_id += 1
+        await websocket.send(ping_message)
+        pong = await websocket.recv()
+        # eventually validate or something here
+
+    async def send_message(self, text, channel, websocket):
+        data = {'id': self.next_id, 'type': 'message', 'channel': channel,
+                'text': text}
+
+        self.next_id += 1
+        self.unacked_messages.add(self.next_id)
+
+        await websocket.send(json.dumps(data))
+
+    async def send_verses(self, body, verses, user, channel, websocket):
         if verses is not None:
             response = Response(body, self.parser)
             for verse in verses:
@@ -118,26 +147,13 @@ class VerseBot(threading.Thread):
             if len(response.verse_list) != 0:
                 message_response = response.construct_message()
                 if message_response is not None:
-                    await self.send_message(message_response, channel)
+                    await self.send_message(message_response, channel,
+                                            websocket)
         else:
             pass
 
-    async def ping(self, websocket):
-        ping_message = json.dumps({"id": self.next_id, "type": "ping",
-                                   "time": time.time()})
-        self.next_id += 1
-        await websocket.send(ping_message)
-        pong = await websocket.recv()
-        # eventually validate or something here
-
-    async def send_message(self, text, channel):
-        data = {'id': self.next_id, 'type': 'message', 'channel': channel,
-                'text': text}
-
-        self.next_id += 1
-        self.unacked_messages.add(self.next_id)
-
-        await websocket.send(json.dumps(data))
+    def search(self, search_terms):
+        return webparser.search_bible_gateway(search_terms)
 
 
 def handle_sigint(sig, frame):
