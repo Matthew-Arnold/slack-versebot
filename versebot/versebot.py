@@ -61,11 +61,9 @@ class VerseBot(threading.Thread):
                     await self.listen(url)
                 except websockets.ConnectionClosed:
                     pass
-                '''
                 except Exception as e:
                     self.log.error('caught ' + str(type(e)) + ':' + str(e))
                     pass
-                '''
 
         else:
             self.log.error('Failed to connect to rtm')
@@ -104,11 +102,14 @@ class VerseBot(threading.Thread):
         channel = msg['channel']
         body = msg['text']
 
-        match = re.search(r'“.*"', body)
+        match = re.search(r'["“].*"', body)
 
         if match is not None:
             reference = self.search(match.group(0))
-            body = '[' + reference + ']'
+            if reference is None:
+                pass
+            else:
+                body = '[' + reference + ']'
 
         verses = find_verses(body)
         await self.send_verses(body, verses, user, channel, websocket)
