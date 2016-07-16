@@ -90,6 +90,7 @@ class VerseBot(threading.Thread):
                     elif msg.get('type', '') == 'error':
                         self.log.error(
                             'error message received: %s' % (json.dumps(msg)))
+                        return
 
                     # TODO handle rtm response. check if ok
                     else:
